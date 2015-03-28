@@ -21,7 +21,10 @@ from skimage import img_as_ubyte
 from skimage.data import camera
 from skimage.filter import threshold_otsu
 from skimage.filter import threshold_adaptive
+from skimage.filter import threshold_yen
+from skimage.restoration import denoise_bilateral
 from skimage.transform import rotate
+from skimage.restoration import denoise_tv_bregman
 import math
 import numpy as np
 import os
@@ -48,12 +51,15 @@ def matched_gaussian_filter_oneDirection(image, sigma, width, L):
         convoluted_image[x, :] = np.sum(template * image[(x - width):(x + width + 1), :], axis=0)
         calibration_level[x, :] = np.sum(image[(x - width):(x + width + 1), :], axis=0)
         convoluted_image[x, :] = np.convolve(convoluted_image[x, :]/calibration_level[x, :], convolve_helper, mode = 'same')
+        #convoluted_image[x, :] = np.convolve(convoluted_image[x, :], convolve_helper, mode = 'same')
         convoluted_image[x, :] = np.convolve(convoluted_image[x, :], convolve_helper, mode = 'same')
             
     return convoluted_image
     
 def matched_gaussian_filter(image, sigma, width, L):
-    angles = [0, 45, 90, 135]
+    #plt.imshow(image)
+    #plt.show()
+    angles = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165]
     
     img_shape = image.shape    
     
@@ -72,7 +78,10 @@ def matched_gaussian_filter(image, sigma, width, L):
             mask = filtered_image > final_image
             final_image = mask * filtered_image + (1-mask) * final_image
     
-    #final_image = threshold_otsu(final_image, nbins=10)
+    #thresh = threshold_li(final_image)
+    #binary = final_image > thresh
+    #edges = feature.canny(final_image, sigma=1)
+    #final_image = denoise_tv_bregman(final_image,0.01)
     plt.imshow(final_image)
     plt.show()
         
@@ -95,7 +104,9 @@ def check_edge_overlapp(y,x,r,edge):
     return np.sum(overlapp)
 
 
-image=io.imread('/Users/Felix/Dropbox/Diabetic Retinopathy/sample/16_left.jpeg')
+image=io.imread('/Users/Felix/Dropbox/Diabetic Retinopathy/sample/17_left.jpeg')
+image[:,:,0] = 0
+image[:,:,2] = 0
 img_resc=transform.rescale(rgb2gray(image),0.25)
 img_gray = img_as_ubyte(exposure.equalize_adapthist(img_resc,clip_limit=0.3))
 #plt.imshow(img_gray, cmap = plt.get_cmap('gray'))
@@ -113,7 +124,9 @@ image_gray_rgb=gray2rgb(img_gray)
 #Make blurry image for edge detection
 im = ndimage.gaussian_filter(img_gray, 4)
 
-matched_gaussian_filter(img_gray, 1, 10, 2)
+matched_gaussian_filter(im, 1, 10, 4)
+
+quit()
 
 # Compute the Canny filter for two values of sigma
 edges1 = feature.canny(im, sigma=0.1) #, low_threshold = 18, high_threshold = 20)
